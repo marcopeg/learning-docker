@@ -16,6 +16,9 @@ Well, obviously Docker stores a lot of files somewhere in your computer (that le
 	
 > `-a` stands for "all". If you omit this flag Docker lists only your
 > running containers, with the flag you will see all of them.
+>
+> [read more](https://docs.docker.com/engine/reference/commandline/ps/)
+
 
 ![docker ps -a output](./docker-ps.png)
 
@@ -44,3 +47,16 @@ While you learn Docker you may want to clean up your computer from all the exist
 
 	# remove all containers
 	docker stop $(docker ps -aq) && docker rm $(docker ps -aq)
+	
+## Named Containers
+
+When you want to take control of your containers you may decide some good names before you actually execute them. Here is the updated command to run a container with a specific name:
+
+	docker run --name goofy hello-world
+	
+## Rename Containers
+
+I never had to use this but for sake of being inclusive toward the less useful commands you may want to:
+
+	docker rename goofy mickey
+	
