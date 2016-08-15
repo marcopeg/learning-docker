@@ -10,9 +10,12 @@ var express = require('express');
 var app = express();
 var port = process.env.PORT || 8080;
 
+var count = 0;
+
 app.get('/', function (req, res) {
-    console.log(new Date(), 'a request happened!');
-    res.send('Hello World!');
+    console.log(new Date(), 'a request happened!', count);
+    res.send('Hello World visitor n.' + count);
+    count++;
 });
 
 app.listen(port, function () {
