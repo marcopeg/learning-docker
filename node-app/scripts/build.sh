@@ -5,4 +5,4 @@
 # https://github.com/marcopeg/learning-docker
 
 # build our new custom image
-docker build --tag nodeapp .
+docker build --tag ${1:-nodeapp}:${2:-latest} .
