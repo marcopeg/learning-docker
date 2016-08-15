@@ -1,0 +1,9 @@
+
+# Learning Docker
+# by @marcopeg
+# https://github.com/marcopeg/learning-docker
+
+# avoid to copy all the node_modules which are installed in the host
+# while building the resulting image.
+
+*/node_modules*
