@@ -1,7 +1,7 @@
 #/bin/bash
 
 # Learning Docker
-# by @marcopeg
+# by @thepeg
 # https://github.com/marcopeg/learning-docker
 
 # accept a custom port setting with a fallback value

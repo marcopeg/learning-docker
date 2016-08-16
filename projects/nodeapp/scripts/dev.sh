@@ -1,7 +1,7 @@
 #/bin/bash
 
 # Learning Docker
-# by @marcopeg
+# by @thepeg
 # https://github.com/marcopeg/learning-docker
 
 # HOW TO USE THE RUNNING CONTAINER:

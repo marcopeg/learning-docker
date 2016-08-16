@@ -1,6 +1,6 @@
 
 # Learning Docker
-# by @marcopeg
+# by @thepeg
 # https://github.com/marcopeg/learning-docker
 
 # Which NodeJS version do we need for our app?
