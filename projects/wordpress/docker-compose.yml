@@ -1,0 +1,53 @@
+
+# Learning Docker
+# by @thepeg
+# https://github.com/marcopeg/learning-docker
+
+# setup a Wordpress development environment
+
+version: '2'
+services:
+
+    storage:
+        image: busybox:latest
+        volumes:
+            - ./data/database:/var/lib/mysql
+            - ./data/wp-content:/var/www/html/wp-content
+            - ./wp-content/uploads:/var/www/html/wp-content/uploads
+            - ./wp-content/plugins:/var/www/html/wp-content/plugins
+            - ./wp-content/themes:/var/www/html/wp-content/themes
+
+    database:
+        image: mysql:latest
+        environment:
+            MYSQL_ROOT_PASSWORD: root
+        volumes_from:
+            - storage
+        ports:
+            - 3306:3306
+
+    wordpress:
+        build: ./services/wordpress
+        links:
+            - database:mysql
+        environment:
+            WORDPRESS_DB_PASSWORD: root
+        ports:
+            - 80:80
+        volumes_from:
+            - storage
+        depends_on:
+            - database
+
+    phpmyadmin:
+        image: phpmyadmin/phpmyadmin
+        links:
+            - database:db
+        ports:
+            - 8080:80
+        environment:
+            PMA_USER: root
+            PMA_PASSWORD: root
+            PHP_UPLOAD_MAX_FILESIZE: 999999999
+        depends_on:
+            - database
