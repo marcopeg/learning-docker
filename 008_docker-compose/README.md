@@ -72,3 +72,22 @@ In order to run the environment you should issue the following command from `doc
 
 	docker-compose up
 	
+## Work with your Environment
+
+	# start your environment and run it in background
+	docker-compose up -d
+	
+	# check out the latest logs
+	docker-compose logs
+	
+	# tail your environment logs
+	docker-compose logs -f
+	
+	# temporary stop your environment
+	docker-compose stop
+	
+	# start a stopped environment
+	docker-compose start
+	
+
+
