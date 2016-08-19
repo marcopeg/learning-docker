@@ -1,5 +1,9 @@
 data
+
+# NodeJS
 node_modules
+cache_posts_list/lib
+cache_single_post/lib
 
 wp-content/themes/index.php
 wp-content/themes/twentyfourteen
