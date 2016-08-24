@@ -1,16 +1,17 @@
 {
-  "name": "cache_posts_list",
+  "name": "cache_single_post",
   "version": "1.0.0",
-  "description": "initialise and keep up to date a caching mechanism for wordpress",
+  "description": "Fetches a single post from wordpress and cache it to redis",
   "main": "app.js",
   "scripts": {
+    "start": "node app.js",
+    "start-dev": "supervisor app.js",
     "test": "npm test"
   },
   "author": "Marco Pegoraro",
   "license": "ISC",
   "dependencies": {
     "amqplib": "^0.4.2",
-    "async": "^2.0.1",
     "express": "^4.14.0",
     "redis": "^2.6.2",
     "superagent": "^2.2.0"
