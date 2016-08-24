@@ -21,7 +21,6 @@ services:
             - ./wp-content/plugins:/var/www/html/wp-content/plugins
             - ./wp-content/themes:/var/www/html/wp-content/themes
             - ./libs/node:/usr/src/app/lib
-            - ./data/node_modules:/usr/src/app/node_modules
 
     mysql:
         image: mysql:latest
@@ -51,6 +50,7 @@ services:
         build: ./services/wordpress
         links:
             - mysql:mysql
+            - cache_trigger:cache_trigger
         environment:
             WORDPRESS_DB_PASSWORD: root
         volumes_from:
@@ -58,13 +58,28 @@ services:
         depends_on:
             - mysql
 
-    # node app which exposes an interface to start the caching process of
-    # all the posts published by the wordpress instance
+    # node app which exposes an interface to start the caching process
+    cache_trigger:
+        build: ./services/node
+        links:
+            - rabbitmq:rabbitmq
+        depends_on:
+            - rabbitmq
+        environment:
+            NODE_ENV: development
+        volumes_from:
+            - storage
+        volumes:
+            - ./apps/cache_trigger:/usr/src/app
+            - ./data/node_modules/cache_trigger:/usr/src/app/node_modules
+
+    # node app which fetches the posts index and sets up the single posts
+    # caching mechanism
     cache_posts_list:
         build: ./services/node
         links:
-            - redis:redis
             - wordpress:wordpress
+            - redis:redis
             - rabbitmq:rabbitmq
         depends_on:
             - wordpress
@@ -76,14 +91,15 @@ services:
             - storage
         volumes:
             - ./apps/cache_posts_list:/usr/src/app
+            - ./data/node_modules/cache_posts_list:/usr/src/app/node_modules
 
     # node app which listen to rabbitmq, pull from wordpress
     # and push to redis
     cache_single_post:
         build: ./services/node
         links:
-            - redis:redis
             - wordpress:wordpress
+            - redis:redis
             - rabbitmq:rabbitmq
         depends_on:
             - wordpress
@@ -95,6 +111,7 @@ services:
             - storage
         volumes:
             - ./apps/cache_single_post:/usr/src/app
+            - ./data/node_modules/cache_single_post:/usr/src/app/node_modules
 
 
 
@@ -140,6 +157,6 @@ services:
             - phpmyadmin:phpmyadmin
             - wordpress:wordpress
             - redis_commander:redis_commander
-            - cache_posts_list:cache_posts_list
+            - cache_trigger:cache_trigger
         volumes:
             - ./services/nginx/nginx.conf:/etc/nginx/nginx.conf

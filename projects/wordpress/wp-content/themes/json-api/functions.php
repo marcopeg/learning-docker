@@ -29,3 +29,10 @@ function debug($v, $die = true) {
 	echo '</pre>';
 	if ($die) die();
 }
+
+// trigger cache refresh whenever a post is being updated
+add_action( 'save_post', 'trigger_refresh_cache' );
+function trigger_refresh_cache( $post_id ) {
+    $url = 'http://cache_trigger:8080';
+    $res = file_get_contents($url);
+}
