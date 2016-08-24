@@ -113,6 +113,22 @@ services:
             - ./apps/cache_single_post:/usr/src/app
             - ./data/node_modules/cache_single_post:/usr/src/app/node_modules
 
+    # node app which listen to rabbitmq, pull from wordpress
+    # and push to redis
+    api_server:
+        build: ./services/node
+        links:
+            - redis:redis
+        depends_on:
+            - redis
+        environment:
+            NODE_ENV: development
+        volumes_from:
+            - storage
+        volumes:
+            - ./apps/api_server:/usr/src/app
+            - ./data/node_modules/api_server:/usr/src/app/node_modules
+
 
 
 
@@ -133,6 +149,7 @@ services:
         depends_on:
             - mysql
 
+    # redis web based gui
     redis_commander:
         build: ./services/redis-ui
         links:
@@ -158,5 +175,6 @@ services:
             - wordpress:wordpress
             - redis_commander:redis_commander
             - cache_trigger:cache_trigger
+            - api_server:api_server
         volumes:
             - ./services/nginx/nginx.conf:/etc/nginx/nginx.conf
