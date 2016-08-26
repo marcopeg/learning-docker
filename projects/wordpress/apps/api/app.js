@@ -1,4 +1,10 @@
 
+/**
+ * Learning Docker
+ * by @thepeg
+ * https://github.com/marcopeg/learning-docker
+ */
+
 // is it worth to add an in-memory caching layer?
 // something that lasts few minutes?
 

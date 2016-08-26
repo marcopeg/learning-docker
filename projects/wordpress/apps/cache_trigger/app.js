@@ -1,4 +1,10 @@
 
+/**
+ * Learning Docker
+ * by @thepeg
+ * https://github.com/marcopeg/learning-docker
+ */
+ 
 var express = require('express');
 var rabbit = require('./lib/rabbitmq');
 

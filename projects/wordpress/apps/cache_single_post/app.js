@@ -1,4 +1,10 @@
 
+/**
+ * Learning Docker
+ * by @thepeg
+ * https://github.com/marcopeg/learning-docker
+ */
+ 
 var request = require('superagent');
 var rabbit = require('./lib/rabbitmq');
 var redis = require('./lib/redis');

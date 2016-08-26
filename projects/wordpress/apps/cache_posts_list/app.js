@@ -1,4 +1,10 @@
 
+/**
+ * Learning Docker
+ * by @thepeg
+ * https://github.com/marcopeg/learning-docker
+ */
+ 
 var async = require('async');
 var request = require('superagent');
 

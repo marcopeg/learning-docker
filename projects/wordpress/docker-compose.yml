@@ -115,7 +115,7 @@ services:
 
     # node app which listen to rabbitmq, pull from wordpress
     # and push to redis
-    api_server:
+    api:
         build: ./services/node
         links:
             - redis:redis
@@ -126,10 +126,22 @@ services:
         volumes_from:
             - storage
         volumes:
-            - ./apps/api_server:/usr/src/app
-            - ./data/node_modules/api_server:/usr/src/app/node_modules
+            - ./apps/api:/usr/src/app
+            - ./data/node_modules/api:/usr/src/app/node_modules
 
-
+    client:
+        build: ./services/frontend
+        environment:
+            NODE_ENV: development
+        ports:
+            - 8080:8080
+        volumes_from:
+            - storage
+        volumes:
+            - ./apps/client:/usr/src/app
+            - ./data/node_modules/client:/usr/src/app/node_modules
+        stdin_open: true
+        tty: true
 
 
 
@@ -171,10 +183,11 @@ services:
             - 80:80
             - 8081:8081
         links:
-            - phpmyadmin:phpmyadmin
-            - wordpress:wordpress
-            - redis_commander:redis_commander
-            - cache_trigger:cache_trigger
-            - api_server:api_server
+            - phpmyadmin:phpmyadmin_service
+            - wordpress:wordpress_service
+            - redis_commander:redis_commander_service
+            - cache_trigger:cache_trigger_service
+            - api:api_service
+            # - client:client_service
         volumes:
             - ./services/nginx/nginx.conf:/etc/nginx/nginx.conf

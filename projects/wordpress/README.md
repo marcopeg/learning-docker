@@ -9,14 +9,37 @@ This project brings all those stuff together using `docker-compose` to harness a
 
 ## Services
 
+### Wordpress
+
+Hugely used content management system.
+
 ### MySql
+
+Old school relational database used by Wordpress.
 
 ### Redis
 
+Fast key/value data storage.
+
 ### RabbitMQ
 
-### Wordpress
+Reliable message queue system.
 
 ### PhpMyAdmin
 
+Web based UI to MySQL.
+
+### redis-commander
+
+Web based UI to Redis.
+
 ### NodeJS
+
+Custom Docker image definition to host a NodeJS application.  
+We use quite a lot of micro-services based on NodeJS in this project!
+
+### NGiNX
+
+Fast and reliable web server, we use it as facade for our system. 
+
+Most of the services will run inside Docker and will be exposed to other services via Docker's links. Some of the services exposes public APIs and it is NGiNCX who is in charge of that.
