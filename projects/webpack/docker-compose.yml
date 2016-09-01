@@ -1,0 +1,22 @@
+version: '2'
+services:
+
+    api:
+        build: ./docker/node
+        volumes:
+            - ./apps/api:/usr/src/app
+            - ./node_modules/api:/usr/src/app/node_modules
+        ports:
+            - 8888:8080
+
+    client:
+        build: ./docker/webpack
+        volumes:
+            - ./apps/client:/usr/src/app
+            - ./node_modules/client:/usr/src/app/node_modules
+        ports:
+            - 8080:8080
+        links:
+            - api:api
+        stdin_open: true
+        tty: true

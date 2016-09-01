@@ -1,8 +1,6 @@
 FROM node:latest
 MAINTAINER "@marcopeg"
 
-ADD start.sh /start.sh
-
 RUN npm install -g \
 	webpack \
 	webpack-dev-server \
@@ -23,5 +21,5 @@ RUN npm install -g \
 VOLUME 		/usr/src/app
 WORKDIR 	/usr/src/app
 
-#ENTRYPOINT start.sh
+#ENTRYPOINT  npm install && npm start
 ENTRYPOINT /bin/bash

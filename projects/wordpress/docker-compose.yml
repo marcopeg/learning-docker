@@ -131,6 +131,8 @@ services:
 
     client:
         build: ./services/frontend
+        links:
+            - api:api
         environment:
             NODE_ENV: development
         ports:

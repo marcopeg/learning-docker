@@ -16,6 +16,7 @@ var port = process.env.PORT || 8080;
 
 expressApp.get('/', (req, res) => {
     redis.get('posts')
+    .then(msg => JSON.parse(msg))
     .then(msg => res.send(msg))
     .catch(err => res.status(500).send(err));
 });
