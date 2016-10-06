@@ -5,6 +5,6 @@ services:
         volumes:
             - ./nginx.conf:/etc/nginx/nginx.conf
             - ./sites-enabled:/etc/nginx/sites-enabled
-            - ./html:/etc/nginx/html
+            - ./default-website:/etc/nginx/default-website
         ports:
             - ${SERVER_PORT}:80

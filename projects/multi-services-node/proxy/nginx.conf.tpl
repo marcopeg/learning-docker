@@ -1,8 +1,4 @@
 
-#
-# Rename this file to "nginx.conf"
-#
-
 events {}
 
 http {
@@ -12,9 +8,9 @@ http {
 
     # Default Server
     server {
-        listen 80 default_server;
+        listen $SERVER_PORT default_server;
         location / {
-            root /etc/nginx/html;
+            root /etc/nginx/default-website;
         }
     }
 

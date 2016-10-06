@@ -1,6 +1,27 @@
 #/bin/bash
 
-source proxy/.env
+
+hash () {
+    [[ $(which md5) ]] && HASH_CMD=md5 || HASH_CMD=md5sum
+    echo $1 | $HASH_CMD
+}
+
+
+# -- Script Settings (you shouldn't touch it)
+SCRIPT_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+SCRIPT_NAME=$(basename "${BASH_SOURCE[0]}")
+SCRIPT_PATH="$SCRIPT_ROOT/$SCRIPT_NAME"
+CACHE_ROOT=~/.docker-server
+CACHE_NAME=$(hash $SCRIPT_PATH)
+CACHE_PATH="$CACHE_ROOT/$CACHE_NAME"
+SITES_ENABLED_PATH=$CACHE_PATH/sites-enabled
+
+# create the cache directory structure
+[ ! -d $CACHE_ROOT ] && mkdir $CACHE_ROOT
+[ ! -d $CACHE_PATH ] &&mkdir $CACHE_PATH
+[ ! -d $SITES_ENABLED_PATH ] && mkdir $SITES_ENABLED_PATH
+
+source .env
 
 # Command is mandatory
 PROJECT_CMD=$1
@@ -9,65 +30,107 @@ if [[ -z $PROJECT_CMD ]]; then
     exit 1
 fi
 
-if [[ "boot" == $PROJECT_CMD ]]; then
-    ./server proxy generate
-    ./server proxy up -d
-    ./server up -d
-    exit 0;
-fi;
 
-if [[ "halt" == $PROJECT_CMD ]]; then
-    ./server proxy down
-    ./server down
+
+
+#
+# Server Commands
+#
+
+if [[ "up" == $PROJECT_CMD ]]; then
+    $SCRIPT_PATH proxy generate
+    $SCRIPT_PATH proxy up -d
+    $SCRIPT_PATH compose up -d
     exit 0;
-fi;
+fi
+
+if [[ "start" == $PROJECT_CMD ]]; then
+    $SCRIPT_PATH proxy start
+    $SCRIPT_PATH compose start
+    exit 0;
+fi
+
+if [[ "stop" == $PROJECT_CMD ]]; then
+    $SCRIPT_PATH proxy stop
+    $SCRIPT_PATH compose stop
+    exit 0;
+fi
+
+if [[ "down" == $PROJECT_CMD ]]; then
+    $SCRIPT_PATH proxy down
+    $SCRIPT_PATH compose down
+    exit 0;
+fi
+
+
+
+
+#
+# NGiNX PROXY
+#
 
 if [[ "proxy" == $PROJECT_CMD ]]; then
     PROXY_CMD=$2
 
     if [[ "generate" == $PROXY_CMD ]]; then
-        echo "generate apps config"
+
+        cp -rf ./proxy/default-website $CACHE_PATH/
+        cat .env > $CACHE_PATH/.env
+        cat ./proxy/docker-compose.yml.tpl > $CACHE_PATH/docker-compose.yml
+
+        # NGiNX Config File
+        CONFIG_FILE="$CACHE_PATH/nginx.conf"
+        CONFIG_FILE_TMP=$(mktemp /tmp/proxy-gen.$(hash $CONFIG_FILE).$(date "+%Y%m%d-%H%M%S"))
+        cp ./proxy/nginx.conf.tpl $CONFIG_FILE_TMP
+        sed -i -e "s/\$SERVER_PORT/$SERVER_PORT/g" $CONFIG_FILE_TMP
+        cat $CONFIG_FILE_TMP > $CONFIG_FILE
+
+        # Apps Virtual Host Config Files
         for d in apps/*/ ; do
-            echo ">>>>>>>>>>"
-            echo "$d"
-
-            CONFIG_FILE="$PWD/proxy/sites-enabled/$(echo $d | tr / _)"
-            CONFIG_FILE_TMP=$(mktemp /tmp/proxy-gen.$(echo $d | tr / _).$(date "+%Y%m%d-%H%M%S"))
-
-            cp ./proxy/sites-enabled.template $CONFIG_FILE_TMP
+            CONFIG_FILE="$SITES_ENABLED_PATH/$(hash $d).conf"
+            CONFIG_FILE_TMP=$(mktemp /tmp/proxy-gen.$CACHE_NAME.$(hash $d).$(date "+%Y%m%d-%H%M%S"))
+            cp ./proxy/virtual-host.tpl $CONFIG_FILE_TMP
             sed -i -e "s/\$SERVER_IP/$SERVER_IP/g" $CONFIG_FILE_TMP
+            sed -i -e "s/\$SERVER_PORT/$SERVER_PORT/g" $CONFIG_FILE_TMP
             (cd $d && source .env && sed -i -e "s/\$PROJECT_HOST/$PROJECT_HOST/g" $CONFIG_FILE_TMP)
             (cd $d && source .env && sed -i -e "s/\$PROJECT_PORT/$PROJECT_PORT/g" $CONFIG_FILE_TMP)
-
-            cat $CONFIG_FILE_TMP
-            cat $CONFIG_FILE_TMP > "$CONFIG_FILE"".conf"
-            echo "<<<<<<<<<<"
+            cat $CONFIG_FILE_TMP > $CONFIG_FILE
         done
         exit 0;
     fi
 
     # Execute docker compose targeting the proxy server
-    ( cd "./proxy" && docker-compose $PROXY_CMD ${@:3} )
+    ( cd $CACHE_PATH && docker-compose $PROXY_CMD ${@:3} )
     exit 0
 fi
 
-# project > target a specific app
-if [ ! -f $2 ]; then
-    echo "check for target app: $2"
-    for d in apps/*/ ; do
-        echo "$d - $2"
 
-        if [[ $d == *"$2"* ]]
-        then
-          echo "It's there!";
-          ( cd $d && ./project $PROJECT_CMD ${@:3} )
+
+
+#
+# Run docker-compose over every app
+#
+
+if [[ "compose" == $PROJECT_CMD ]]; then
+    COMPOSE_CMD=$2
+    for d in apps/*/ ; do
+        echo "$d"
+        ( cd $d && ./compose $COMPOSE_CMD ${@:3} )
+    done
+fi
+
+
+
+
+#
+# project > target a specific app
+#
+
+if [ ! -f $1 ]; then
+    for d in apps/*/ ; do
+        if [[ $d == *"$1"* ]]; then
+          ( cd $d && ./compose ${@:2} )
           exit 0;
         fi
     done
 fi
-
-# project > all the apps
-for d in apps/*/ ; do
-    echo "$d"
-    ( cd $d && ./project $PROJECT_CMD ${@:2} )
-done
