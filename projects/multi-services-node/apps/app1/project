@@ -1,74 +1,49 @@
 #/bin/bash
 
 #
-# Docker Compose Wrapper
-# ----------------------
-# It helps to run overrides of a basic docker compose sourcing the informations
-# from a local ".env" file.
+# Download and executes a remote GitHub gist
+# it will store a local cache to improve performances
 #
-#     // .env
-#     PROJECT_ENV=default
-#
-#     // cli:
-#     ./project up --->
-#     docker-compose -f docker-compose.yml up
-#
-# ----------------------
-#     // .env
-#     PROJECT_ENV=dev
-#
-#     // cli:
-#     ./project up --->
-#     docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
-#
-# NOTE:
-# ".env" will be sourced into the "docker-compose.yml" file too,
-# if you want to specify strings variables you need to export them:
-#
-#     export WEBSITE_TITLE="Just another Wordpress blog"
+# run `./script --update` to flush local cache
 #
 
-# Default name for the project environment file
-ENV_FILE=.env
+# -- Custom Settings
+GIST_URL="https://gist.github.com/marcopeg/7a05828b9ead397ba8beb5aaea4c7bfb/raw"
 
-# Validate environment
-if [ ! -f $ENV_FILE ]; then
-    echo "Please create a \".env\" file to describe your environment"
-    exit 1
+
+# -- Script Settings (you shouldn't touch it)
+SCRIPT_NAME=$(basename "${BASH_SOURCE[0]}")
+SCRIPT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$SCRIPT_NAME"
+CACHE_FOLDER=~/.remote-gist
+CACHE_FILE="$CACHE_FOLDER/"$SCRIPT_NAME"__$(echo $PWD | tr / .)"
+
+
+if [ ! -d $CACHE_FOLDER ]; then
+    mkdir $CACHE_FOLDER
 fi
 
-# Command is mandatory
-PROJECT_CMD=$1
-if [[ -z $PROJECT_CMD ]]; then
-    echo "Please input a command"
-    echo "[$ALLOWED_COMMANDS]"
-    exit 1
-fi
-
-# Get info about the current environment
-source $ENV_FILE
-
-# Generate the compose override string
-WHICH_COMPOSE="-f docker-compose.yml"
-if [[ ! "default" == $PROJECT_ENV && ! -z $PROJECT_ENV ]]; then
-    EXTEND_COMPOSE="docker-compose.$PROJECT_ENV.yml"
-    if [ ! -f $EXTEND_COMPOSE ]; then
-        echo "\"$EXTEND_COMPOSE\" not found!"
-        exit 1
-    fi
-    WHICH_COMPOSE="$WHICH_COMPOSE -f $EXTEND_COMPOSE"
-fi
-
-# Info
-if [[ "info" == $PROJECT_CMD ]]; then
-    echo "Docker Compose Wrapper"
-    echo "----------------------"
-    echo "PROJECT_ENV: $PROJECT_ENV"
-    echo "PROJECT_PORT: $PROJECT_PORT"
-    echo ""
-    echo ">> \"docker-compose $WHICH_COMPOSE $2 ${@:3}\""
+# Force update
+if [[ "--update" == $1 ]]; then
+    rm -f $CACHE_FILE
+    $SCRIPT_PATH ${@:2}
     exit 0
 fi
 
-# Wrap docker-compose commands
-docker-compose $WHICH_COMPOSE $PROJECT_CMD ${@:2} && exit 0;
+# Download the file
+if [ ! -f $CACHE_FILE ]; then
+    echo ""
+    echo ""
+    echo "========== RETRIEVE THE SCRIPT ==========="
+    if [ $(which wget) ] ; then
+        wget -O $CACHE_FILE $GIST_URL
+    else
+        curl -L -o $CACHE_FILE $GIST_URL
+    fi
+    chmod +x $CACHE_FILE
+    echo "=========================================="
+    echo ""
+    echo ""
+fi
+
+# Execute the command
+$CACHE_FILE $@
