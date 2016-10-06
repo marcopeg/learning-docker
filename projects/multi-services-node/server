@@ -1,0 +1,73 @@
+#/bin/bash
+
+source proxy/.env
+
+# Command is mandatory
+PROJECT_CMD=$1
+if [[ -z $PROJECT_CMD ]]; then
+    echo "Please input a command"
+    exit 1
+fi
+
+if [[ "boot" == $PROJECT_CMD ]]; then
+    ./server proxy generate
+    ./server proxy up -d
+    ./server up -d
+    exit 0;
+fi;
+
+if [[ "halt" == $PROJECT_CMD ]]; then
+    ./server proxy down
+    ./server down
+    exit 0;
+fi;
+
+if [[ "proxy" == $PROJECT_CMD ]]; then
+    PROXY_CMD=$2
+
+    if [[ "generate" == $PROXY_CMD ]]; then
+        echo "generate apps config"
+        for d in apps/*/ ; do
+            echo ">>>>>>>>>>"
+            echo "$d"
+
+            CONFIG_FILE="$PWD/proxy/sites-enabled/$(echo $d | tr / _)"
+            CONFIG_FILE_TMP=$(mktemp /tmp/proxy-gen.$(echo $d | tr / _).$(date "+%Y%m%d-%H%M%S"))
+
+            cp ./proxy/sites-enabled.template $CONFIG_FILE_TMP
+            sed -i -e "s/\$SERVER_IP/$SERVER_IP/g" $CONFIG_FILE_TMP
+            (cd $d && source .env && sed -i -e "s/\$PROJECT_HOST/$PROJECT_HOST/g" $CONFIG_FILE_TMP)
+            (cd $d && source .env && sed -i -e "s/\$PROJECT_PORT/$PROJECT_PORT/g" $CONFIG_FILE_TMP)
+
+            cat $CONFIG_FILE_TMP
+            cat $CONFIG_FILE_TMP > "$CONFIG_FILE"".conf"
+            echo "<<<<<<<<<<"
+        done
+        exit 0;
+    fi
+
+    # Execute docker compose targeting the proxy server
+    ( cd "./proxy" && docker-compose $PROXY_CMD ${@:3} )
+    exit 0
+fi
+
+# project > target a specific app
+if [ ! -f $2 ]; then
+    echo "check for target app: $2"
+    for d in apps/*/ ; do
+        echo "$d - $2"
+
+        if [[ $d == *"$2"* ]]
+        then
+          echo "It's there!";
+          ( cd $d && ./project $PROJECT_CMD ${@:3} )
+          exit 0;
+        fi
+    done
+fi
+
+# project > all the apps
+for d in apps/*/ ; do
+    echo "$d"
+    ( cd $d && ./project $PROJECT_CMD ${@:2} )
+done
