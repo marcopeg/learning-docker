@@ -1,7 +1,7 @@
 #/bin/bash
 
 # Default name for the project environment file
-ENV_FILE=.env
+#ENV_FILE=.env
 
 hash () {
     [[ $(which md5) ]] && HASH_CMD=md5 || HASH_CMD=md5sum
@@ -25,8 +25,23 @@ function parse_yaml {
    }'
 }
 
+
+# -- Script Settings (you shouldn't touch it)
+SCRIPT_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+SCRIPT_NAME=$(basename "${BASH_SOURCE[0]}")
+SCRIPT_PATH="$SCRIPT_ROOT/$SCRIPT_NAME"
+CONFIG_ROOT=$SCRIPT_ROOT/.$SCRIPT_NAME
+TEMPLATES_ROOT=$CONFIG_ROOT/templates
+CACHE_ROOT=$CONFIG_ROOT/cache
+CACHE_NAME=$(hash $SCRIPT_PATH)
+CACHE_PATH="$CACHE_ROOT/$CACHE_NAME"
+SITES_ENABLED_PATH=$CACHE_PATH/sites-enabled
+CONFIG_FILE="$SCRIPT_NAME.yml"
+
+
+
 # Validate Environment Configuration
-if [ ! -f $ENV_FILE ]; then
+if [ ! -f $CONFIG_FILE ]; then
 
     if [ $(which wget) ] ; then
         PUBLIC_IP=$(wget -qO- http://wgetip.com/)
@@ -50,30 +65,12 @@ if [ ! -f $ENV_FILE ]; then
 fi
 
 
-
-
-# -- Script Settings (you shouldn't touch it)
-SCRIPT_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-SCRIPT_NAME=$(basename "${BASH_SOURCE[0]}")
-SCRIPT_PATH="$SCRIPT_ROOT/$SCRIPT_NAME"
-CONFIG_ROOT=$SCRIPT_ROOT/.$SCRIPT_NAME
-TEMPLATES_ROOT=$CONFIG_ROOT/templates
-CACHE_ROOT=$CONFIG_ROOT/cache
-CACHE_NAME=$(hash $SCRIPT_PATH)
-CACHE_PATH="$CACHE_ROOT/$CACHE_NAME"
-SITES_ENABLED_PATH=$CACHE_PATH/sites-enabled
-CONFIG_FILE="$SCRIPT_NAME.yml"
-
-
 # create the cache directory structure
 [ ! -d $CACHE_ROOT ] && mkdir $CACHE_ROOT
 [ ! -d $CACHE_PATH ] &&mkdir $CACHE_PATH
 [ ! -d $SITES_ENABLED_PATH ] && mkdir $SITES_ENABLED_PATH
 
 # Load Server Settings
-source $ENV_FILE
-
-# Load configuration
 if [ -f $CONFIG_FILE ]; then
     #parse_yaml server.yml && exit
     eval $(parse_yaml server.yml)
@@ -94,8 +91,8 @@ fi
 #
 
 if [[ "up" == $PROJECT_CMD ]]; then
-    $SCRIPT_PATH config validate
-    [[ $? == 1 ]] && exit $?
+    #$SCRIPT_PATH config validate
+    #[[ $? == 1 ]] && exit $?
     $SCRIPT_PATH config generate
     $SCRIPT_PATH proxy up -d
     $SCRIPT_PATH compose up -d
@@ -121,9 +118,9 @@ if [[ "down" == $PROJECT_CMD ]]; then
 fi
 
 if [[ "reload" == $PROJECT_CMD ]]; then
-    $SCRIPT_PATH config validate
-    [[ $? == 1 ]] && exit $?
-    $SCRIPT_PATH proxy down
+    #$SCRIPT_PATH config validate
+    #[[ $? == 1 ]] && exit $?
+    $SCRIPT_PATH proxy stop
     $SCRIPT_PATH config generate
     $SCRIPT_PATH proxy up -d
     exit 0;
@@ -148,21 +145,19 @@ if [[ "config" == $PROJECT_CMD ]]; then
             [[ $APP_PORT != "" ]] && APP_OVERRIDE="$APP_OVERRIDE""PROJECT_PORT=$APP_PORT "
             [[ $APP_HOST != "" ]] && APP_OVERRIDE="$APP_OVERRIDE""PROJECT_HOST=$APP_HOST "
 
-            if [[ $APP_OVERRIDE != "" ]]; then
-                echo $APP_OVERRIDE | tr ' ' '\n' > $APP_OVERRIDE_FILE
-            fi
+            echo $APP_OVERRIDE | tr ' ' '\n' > $APP_OVERRIDE_FILE
         done
 
-
+        # Static files
+        echo "SERVER_IP=$proxy__ip SERVER_PORT=$proxy__port " | tr ' ' '\n' > $CACHE_PATH/.env
         cp -rf $TEMPLATES_ROOT/default-website $CACHE_PATH/
-        cat .env > $CACHE_PATH/.env
-        cat $TEMPLATES_ROOT/docker-compose.yml.tpl > $CACHE_PATH/docker-compose.yml
+        cp $TEMPLATES_ROOT/docker-compose.yml.tpl $CACHE_PATH/docker-compose.yml
 
         # NGiNX Config File
         CONFIG_FILE="$CACHE_PATH/nginx.conf"
         CONFIG_FILE_TMP=$(mktemp /tmp/proxy-gen.$(hash $CONFIG_FILE).$(date "+%Y%m%d-%H%M%S"))
         cp $TEMPLATES_ROOT/nginx.conf.tpl $CONFIG_FILE_TMP
-        sed -i -e "s/\$SERVER_PORT/$SERVER_PORT/g" $CONFIG_FILE_TMP
+        sed -i -e "s/\$SERVER_PORT/$proxy__port/g" $CONFIG_FILE_TMP
         cat $CONFIG_FILE_TMP > $CONFIG_FILE
 
         # Apps Virtual Host Config Files
@@ -170,10 +165,10 @@ if [[ "config" == $PROJECT_CMD ]]; then
             CONFIG_FILE="$SITES_ENABLED_PATH/$(hash $d).conf"
             CONFIG_FILE_TMP=$(mktemp /tmp/proxy-gen.$CACHE_NAME.$(hash $d).$(date "+%Y%m%d-%H%M%S"))
             cp $TEMPLATES_ROOT/virtual-host.conf.tpl $CONFIG_FILE_TMP
-            sed -i -e "s/\$SERVER_IP/$SERVER_IP/g" $CONFIG_FILE_TMP
-            sed -i -e "s/\$SERVER_PORT/$SERVER_PORT/g" $CONFIG_FILE_TMP
-            (cd $d && source .env && sed -i -e "s/\$PROJECT_HOST/$PROJECT_HOST/g" $CONFIG_FILE_TMP)
-            (cd $d && source .env && sed -i -e "s/\$PROJECT_PORT/$PROJECT_PORT/g" $CONFIG_FILE_TMP)
+            sed -i -e "s/\$SERVER_IP/$proxy__ip/g" $CONFIG_FILE_TMP
+            sed -i -e "s/\$SERVER_PORT/$proxy__port/g" $CONFIG_FILE_TMP
+            (cd $d && source .env && source .env.override && sed -i -e "s/\$PROJECT_HOST/$PROJECT_HOST/g" $CONFIG_FILE_TMP)
+            (cd $d && source .env && source .env.override && sed -i -e "s/\$PROJECT_PORT/$PROJECT_PORT/g" $CONFIG_FILE_TMP)
             cat $CONFIG_FILE_TMP > $CONFIG_FILE
         done
         exit 0
