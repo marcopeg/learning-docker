@@ -8,6 +8,23 @@ hash () {
     echo $1 | $HASH_CMD
 }
 
+function parse_yaml {
+   local prefix=$2
+   local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
+   sed -ne "s|^\($s\):|\1|" \
+        -e "s|^\($s\)\($w\)$s:$s[\"']\(.*\)[\"']$s\$|\1$fs\2$fs\3|p" \
+        -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
+   awk -F$fs '{
+      indent = length($1)/2;
+      vname[indent] = $2;
+      for (i in vname) {if (i > indent) {delete vname[i]}}
+      if (length($3) > 0) {
+         vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
+         printf("%s%s%s=\"%s\"\n", "'$prefix'",vn, $2, $3);
+      }
+   }'
+}
+
 # Validate Environment Configuration
 if [ ! -f $ENV_FILE ]; then
 
@@ -45,6 +62,7 @@ CACHE_ROOT=$CONFIG_ROOT/cache
 CACHE_NAME=$(hash $SCRIPT_PATH)
 CACHE_PATH="$CACHE_ROOT/$CACHE_NAME"
 SITES_ENABLED_PATH=$CACHE_PATH/sites-enabled
+CONFIG_FILE="$SCRIPT_NAME.yml"
 
 
 # create the cache directory structure
@@ -54,6 +72,12 @@ SITES_ENABLED_PATH=$CACHE_PATH/sites-enabled
 
 # Load Server Settings
 source $ENV_FILE
+
+# Load configuration
+if [ -f $CONFIG_FILE ]; then
+    #parse_yaml server.yml && exit
+    eval $(parse_yaml server.yml)
+fi
 
 # Command is mandatory
 PROJECT_CMD=$1
@@ -109,6 +133,27 @@ if [[ "config" == $PROJECT_CMD ]]; then
     CONFIG_CMD=$2
 
     if [[ "generate" == $CONFIG_CMD ]]; then
+
+        # Environment Overrides
+        for d in apps/*/ ; do
+            APP_NAME=$(basename "$d")
+            APP_OVERRIDE_FILE="$SCRIPT_ROOT/$d.env.override"
+            [[ -f $APP_OVERRIDE_FILE ]] && rm $APP_OVERRIDE_FILE
+
+            # Overriddable Variables
+            eval APP_PORT=\$"services__${APP_NAME}__port"
+            eval APP_HOST=\$"services__${APP_NAME}__host"
+
+            APP_OVERRIDE=""
+            [[ $APP_PORT != "" ]] && APP_OVERRIDE="$APP_OVERRIDE""PROJECT_PORT=$APP_PORT "
+            [[ $APP_HOST != "" ]] && APP_OVERRIDE="$APP_OVERRIDE""PROJECT_HOST=$APP_HOST "
+
+            if [[ $APP_OVERRIDE != "" ]]; then
+                echo $APP_OVERRIDE | tr ' ' '\n' > $APP_OVERRIDE_FILE
+            fi
+        done
+
+
         cp -rf $TEMPLATES_ROOT/default-website $CACHE_PATH/
         cat .env > $CACHE_PATH/.env
         cat $TEMPLATES_ROOT/docker-compose.yml.tpl > $CACHE_PATH/docker-compose.yml
