@@ -1,27 +1,59 @@
 #/bin/bash
 
+# Default name for the project environment file
+ENV_FILE=.env
 
 hash () {
     [[ $(which md5) ]] && HASH_CMD=md5 || HASH_CMD=md5sum
     echo $1 | $HASH_CMD
 }
 
+# Validate Environment Configuration
+if [ ! -f $ENV_FILE ]; then
+
+    if [ $(which wget) ] ; then
+        PUBLIC_IP=$(wget -qO- http://wgetip.com/)
+    else
+        PUBLIC_IP=$(curl -s https://4.ifcfg.me/)
+    fi
+
+    echo ""
+    echo "============== WARNING ==============="
+    echo ""
+    echo "  !!! >> $ENV_FILE << file is missing !!!"
+    echo ""
+    echo "You need to provide a small configuration to run this proxy :-)"
+    echo "Please run the following command:"
+    echo ""
+    echo "    printf 'SERVER_IP=$PUBLIC_IP\nSERVER_PORT=80' > $ENV_FILE"
+    echo ""
+    echo "======================================"
+    echo ""
+    exit 1
+fi
+
+
+
 
 # -- Script Settings (you shouldn't touch it)
 SCRIPT_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 SCRIPT_NAME=$(basename "${BASH_SOURCE[0]}")
 SCRIPT_PATH="$SCRIPT_ROOT/$SCRIPT_NAME"
-CACHE_ROOT=~/.docker-server
+CONFIG_ROOT=$SCRIPT_ROOT/.$SCRIPT_NAME
+TEMPLATES_ROOT=$CONFIG_ROOT/templates
+CACHE_ROOT=$CONFIG_ROOT/cache
 CACHE_NAME=$(hash $SCRIPT_PATH)
 CACHE_PATH="$CACHE_ROOT/$CACHE_NAME"
 SITES_ENABLED_PATH=$CACHE_PATH/sites-enabled
+
 
 # create the cache directory structure
 [ ! -d $CACHE_ROOT ] && mkdir $CACHE_ROOT
 [ ! -d $CACHE_PATH ] &&mkdir $CACHE_PATH
 [ ! -d $SITES_ENABLED_PATH ] && mkdir $SITES_ENABLED_PATH
 
-source .env
+# Load Server Settings
+source $ENV_FILE
 
 # Command is mandatory
 PROJECT_CMD=$1
@@ -62,26 +94,25 @@ if [[ "down" == $PROJECT_CMD ]]; then
     exit 0;
 fi
 
+if [[ "reload" == $PROJECT_CMD ]]; then
+    $SCRIPT_PATH proxy down
+    $SCRIPT_PATH config generate
+    $SCRIPT_PATH proxy up -d
+    exit 0;
+fi
 
+if [[ "config" == $PROJECT_CMD ]]; then
+    CONFIG_CMD=$2
 
-
-#
-# NGiNX PROXY
-#
-
-if [[ "proxy" == $PROJECT_CMD ]]; then
-    PROXY_CMD=$2
-
-    if [[ "generate" == $PROXY_CMD ]]; then
-
-        cp -rf ./proxy/default-website $CACHE_PATH/
+    if [[ "generate" == $CONFIG_CMD ]]; then
+        cp -rf $TEMPLATES_ROOT/default-website $CACHE_PATH/
         cat .env > $CACHE_PATH/.env
-        cat ./proxy/docker-compose.yml.tpl > $CACHE_PATH/docker-compose.yml
+        cat $TEMPLATES_ROOT/docker-compose.yml.tpl > $CACHE_PATH/docker-compose.yml
 
         # NGiNX Config File
         CONFIG_FILE="$CACHE_PATH/nginx.conf"
         CONFIG_FILE_TMP=$(mktemp /tmp/proxy-gen.$(hash $CONFIG_FILE).$(date "+%Y%m%d-%H%M%S"))
-        cp ./proxy/nginx.conf.tpl $CONFIG_FILE_TMP
+        cp $TEMPLATES_ROOT/nginx.conf.tpl $CONFIG_FILE_TMP
         sed -i -e "s/\$SERVER_PORT/$SERVER_PORT/g" $CONFIG_FILE_TMP
         cat $CONFIG_FILE_TMP > $CONFIG_FILE
 
@@ -89,7 +120,7 @@ if [[ "proxy" == $PROJECT_CMD ]]; then
         for d in apps/*/ ; do
             CONFIG_FILE="$SITES_ENABLED_PATH/$(hash $d).conf"
             CONFIG_FILE_TMP=$(mktemp /tmp/proxy-gen.$CACHE_NAME.$(hash $d).$(date "+%Y%m%d-%H%M%S"))
-            cp ./proxy/virtual-host.tpl $CONFIG_FILE_TMP
+            cp $TEMPLATES_ROOT/virtual-host.conf.tpl $CONFIG_FILE_TMP
             sed -i -e "s/\$SERVER_IP/$SERVER_IP/g" $CONFIG_FILE_TMP
             sed -i -e "s/\$SERVER_PORT/$SERVER_PORT/g" $CONFIG_FILE_TMP
             (cd $d && source .env && sed -i -e "s/\$PROJECT_HOST/$PROJECT_HOST/g" $CONFIG_FILE_TMP)
@@ -99,7 +130,45 @@ if [[ "proxy" == $PROJECT_CMD ]]; then
         exit 0;
     fi
 
-    # Execute docker compose targeting the proxy server
+    if [[ "html" == $CONFIG_CMD ]]; then
+        TEMPLATE_PATH=$TEMPLATES_ROOT/default-website
+        EDITOR_CMD=${3:-vi}
+        $EDITOR_CMD $TEMPLATE_PATH
+        exit
+    fi
+
+    if [[ "nginx" == $CONFIG_CMD ]]; then
+        TEMPLATE_PATH=$TEMPLATES_ROOT/nginx.conf.tpl
+        EDITOR_CMD=${3:-vi}
+        $EDITOR_CMD $TEMPLATE_PATH
+        exit
+    fi
+
+    if [[ "vhost" == $CONFIG_CMD ]]; then
+        TEMPLATE_PATH=$TEMPLATES_ROOT/virtual-host.conf.tpl
+        EDITOR_CMD=${3:-vi}
+        $EDITOR_CMD $TEMPLATE_PATH
+        exit
+    fi
+
+    if [[ "compose" == $CONFIG_CMD ]]; then
+        TEMPLATE_PATH=$TEMPLATES_ROOT/docker-compose.yml.tpl
+        EDITOR_CMD=${3:-vi}
+        $EDITOR_CMD $TEMPLATE_PATH
+        exit
+    fi
+
+fi
+
+
+
+#
+# NGiNX PROXY
+# Execute docker compose targeting the proxy server
+#
+
+if [[ "proxy" == $PROJECT_CMD ]]; then
+    PROXY_CMD=$2
     ( cd $CACHE_PATH && docker-compose $PROXY_CMD ${@:3} )
     exit 0
 fi
