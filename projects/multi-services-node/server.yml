@@ -4,12 +4,12 @@ proxy:
     ip: 172.16.135.169
     port: 80
 
-services:
+apps:
     app1:
+        env: dev
         port: 81
         host: app1.docker.dev
-    app2:
-        host: foo
+    # app2:
+    #     port: 82
     app3:
         port: 83
-        host: app2.docker.dev
