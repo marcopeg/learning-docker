@@ -1,0 +1,13 @@
+version: '2'
+services:
+    api:
+        image: marcopeg/node
+        tty: true
+        volumes:
+            - ./services/api:/usr/src/app
+        ports:
+            - 8081:8080
+        entrypoint:
+            - npm
+            - run
+            - dev:start

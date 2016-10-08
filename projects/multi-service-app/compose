@@ -1,0 +1,98 @@
+#/bin/bash
+
+#
+# Docker Compose Wrapper
+# ----------------------
+# It helps to run overrides of a basic docker compose sourcing the informations
+# from a local ".env" file.
+#
+#     // .env
+#     PROJECT_ENV=default
+#
+#     // cli:
+#     ./project up --->
+#     docker-compose -f docker-compose.yml up
+#
+# ----------------------
+#     // .env
+#     PROJECT_ENV=dev
+#
+#     // cli:
+#     ./project up --->
+#     docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# NOTE:
+# ".env" will be sourced into the "docker-compose.yml" file too,
+# if you want to specify strings variables you need to export them:
+#
+#     export WEBSITE_TITLE="Just another Wordpress blog"
+#
+
+# Default name for the project environment description
+# an optional override file is also loaded, the intention is to le the
+# app to describe herself in the $ENV_CONFIG but some other changes
+# can be injected from external services like the DockerProxy project.
+ENV_CONFIG=.env
+ENV_OVERRIDE=.env.override
+
+# Validate environment
+if [ ! -f $ENV_CONFIG ]; then
+    echo "Please create a \".env\" file to describe your environment"
+    exit 1
+fi
+
+# Command is mandatory
+PROJECT_CMD=$1
+if [[ -z $PROJECT_CMD ]]; then
+    echo "Please input a command"
+    echo "[$ALLOWED_COMMANDS]"
+    exit 1
+fi
+
+# Compose the environment override string
+# this will be passed to docker-compose instruction later on
+ENV_OVERRIDE_VARS=""
+if [ -f $ENV_OVERRIDE ]; then
+    ENV_OVERRIDE_VARS=$(source $ENV_OVERRIDE && [[ ! -z ${PROJECT_ENV+x} ]] && ENV_OVERRIDE_VARS="$ENV_OVERRIDE_VARS PROJECT_ENV=$PROJECT_ENV" ; echo $ENV_OVERRIDE_VARS)
+    ENV_OVERRIDE_VARS=$(source $ENV_OVERRIDE && [[ ! -z ${PROJECT_PORT+x} ]] && ENV_OVERRIDE_VARS="$ENV_OVERRIDE_VARS PROJECT_PORT=$PROJECT_PORT" ; echo $ENV_OVERRIDE_VARS)
+    ENV_OVERRIDE_VARS=$(source $ENV_OVERRIDE && [[ ! -z ${PROJECT_HOST+x} ]] && ENV_OVERRIDE_VARS="$ENV_OVERRIDE_VARS PROJECT_HOST=$PROJECT_HOST" ; echo $ENV_OVERRIDE_VARS)
+fi
+
+
+# Get info about the current environment
+source $ENV_CONFIG
+
+# Load the optional override file
+if [ -f $ENV_OVERRIDE ]; then
+    source $ENV_OVERRIDE
+fi
+
+# Generate the compose override string
+WHICH_COMPOSE="-f docker-compose.yml"
+if [[ ! "default" == $PROJECT_ENV && ! -z $PROJECT_ENV ]]; then
+    EXTEND_COMPOSE="docker-compose.$PROJECT_ENV.yml"
+    if [ ! -f $EXTEND_COMPOSE ]; then
+        echo "\"$EXTEND_COMPOSE\" not found!"
+        exit 1
+    fi
+    WHICH_COMPOSE="$WHICH_COMPOSE -f $EXTEND_COMPOSE"
+fi
+
+
+# Compose the `docker-compose` full instruction
+WHICH_CMD="$ENV_OVERRIDE_VARS docker-compose $WHICH_COMPOSE $PROJECT_CMD ${@:2} && exit 0"
+
+# Info
+if [[ "info" == $PROJECT_CMD ]]; then
+    echo "Docker Compose Wrapper"
+    echo "----------------------"
+    echo "PROJECT_ENV: $PROJECT_ENV"
+    echo "PROJECT_PORT: $PROJECT_PORT"
+    echo "PROJECT_HOST: $PROJECT_HOST"
+    echo ""
+    echo ">> \"$WHICH_CMD\""
+    exit 0
+fi
+
+# Wrap docker-compose commands
+eval $WHICH_CMD

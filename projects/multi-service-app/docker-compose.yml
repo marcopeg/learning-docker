@@ -1,0 +1,7 @@
+version: '2'
+services:
+    api:
+        build: ./services/api
+        environment:
+            - NODE_ENV=${NODE_ENV}
+            - HELLO_MSG=${HELLO_MSG}
