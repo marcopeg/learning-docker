@@ -11,3 +11,17 @@ services:
             - npm
             - run
             - dev:start
+
+    frontend:
+        image: marcopeg/node
+        tty: true
+        volumes:
+            - ./services/frontend:/usr/src/app
+        ports:
+            - 8080:8080
+        environment:
+            - API_ROOT=http://localhost:8081
+        entrypoint:
+            - npm
+            - run
+            - start

@@ -1,7 +1,11 @@
 var express = require('express');
+var corsMiddleware = require('./middlewares/cors');
+var data = require('./db.json');
 var app = express();
 
-var data = require('./db.json');
+if ('development' === process.env.NODE_ENV) {
+    app.use(corsMiddleware('*'));
+}
 
 app.get('/', (req, res) => {
     res.send('+ok - ' + process.env.HELLO_MSG);

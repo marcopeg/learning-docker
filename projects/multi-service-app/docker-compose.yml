@@ -5,3 +5,7 @@ services:
         environment:
             - NODE_ENV=${NODE_ENV}
             - HELLO_MSG=${HELLO_MSG}
+
+    frontend:
+        environment:
+            - NODE_ENV=${NODE_ENV}
