@@ -1,10 +1,8 @@
 version: '2'
 services:
     node:
-        build: ./services/node
+        image: nginx
+        volumes:
+            - ./index.html:/usr/share/nginx/html/index.html
         ports:
-            - ${PROJECT_PORT}:3000
-        environment:
-            - MSG=${MSG}
-            - NODE_ENV=${NODE_ENV}
-            - PROJECT_ENV=${PROJECT_ENV}
+            - ${PROJECT_PORT}:80

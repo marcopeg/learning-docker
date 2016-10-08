@@ -8,7 +8,7 @@ http {
 
     # Default Server
     server {
-        listen $SERVER_PORT default_server;
+        listen 80 default_server;
         location / {
             root /etc/nginx/default-website;
         }

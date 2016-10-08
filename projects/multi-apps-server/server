@@ -162,14 +162,30 @@ if [[ "config" == $PROJECT_CMD ]]; then
 
         # Apps Virtual Host Config Files
         for d in apps/*/ ; do
+            PROJECT_HOST=""
+            PROJECT_PORT=""
             CONFIG_FILE="$SITES_ENABLED_PATH/$(hash $d).conf"
             CONFIG_FILE_TMP=$(mktemp /tmp/proxy-gen.$CACHE_NAME.$(hash $d).$(date "+%Y%m%d-%H%M%S"))
             cp $TEMPLATES_ROOT/virtual-host.conf.tpl $CONFIG_FILE_TMP
             sed -i -e "s/\$SERVER_IP/$proxy__ip/g" $CONFIG_FILE_TMP
             sed -i -e "s/\$SERVER_PORT/$proxy__port/g" $CONFIG_FILE_TMP
-            (cd $d && [ -f .env ] && source .env && [ -f .env.override ] && source .env.override && sed -i -e "s/\$PROJECT_HOST/$PROJECT_HOST/g" $CONFIG_FILE_TMP)
-            (cd $d && [ -f .env ] && source .env && [ -f .env.override ] && source .env.override && sed -i -e "s/\$PROJECT_PORT/$PROJECT_PORT/g" $CONFIG_FILE_TMP)
-            cat $CONFIG_FILE_TMP > $CONFIG_FILE
+            PROJECT_HOST=$(
+                cd $d
+                [ -f .env ] && source .env
+                [ -f .env.override ] && source .env.override
+                sed -i -e "s/\$PROJECT_HOST/$PROJECT_HOST/g" $CONFIG_FILE_TMP
+                echo $PROJECT_HOST
+            )
+            PROJECT_PORT=$(
+                cd $d
+                [ -f .env ] && source .env
+                [ -f .env.override ] && source .env.override
+                sed -i -e "s/\$PROJECT_PORT/$PROJECT_PORT/g" $CONFIG_FILE_TMP
+                echo $PROJECT_PORT
+            )
+            # override former configuration by removing existing virtual host
+            rm -f $CONFIG_FILE
+            [[ $PROJECT_HOST != "" ]] && cat $CONFIG_FILE_TMP > $CONFIG_FILE
         done
         exit 0
     fi

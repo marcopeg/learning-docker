@@ -1,5 +1,5 @@
 server {
-    listen $SERVER_PORT;
+    listen 80;
     server_name $PROJECT_HOST;
     location / {
         proxy_set_header        Host $host;
