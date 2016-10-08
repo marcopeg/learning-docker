@@ -7,11 +7,11 @@ if ('development' === process.env.NODE_ENV) {
     app.use(corsMiddleware('*'));
 }
 
-app.get('/', (req, res) => {
+app.get('/api', (req, res) => {
     res.send('+ok - ' + process.env.HELLO_MSG);
 });
 
-app.get('/avengers', (req, res) => {
+app.get('/api/avengers', (req, res) => {
     res.send(data.avengers);
 });
 

@@ -20,7 +20,7 @@ services:
         ports:
             - 8080:8080
         environment:
-            - API_ROOT=http://localhost:8081
+            - API_ROOT=http://localhost:8081/api
         entrypoint:
             - npm
             - run

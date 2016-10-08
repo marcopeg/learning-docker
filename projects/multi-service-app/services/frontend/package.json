@@ -4,11 +4,15 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "test" : "node webpack.config.js",
     "start": "npm install && ./node_modules/.bin/webpack-dev-server --host=0.0.0.0  --progress --colors",
     "build": "./node_modules/.bin/webpack"
   },
   "author": "",
   "license": "ISC",
+  "devDependencies" : {
+      "webpack-dev-server": "^1.16.2"
+  },
   "dependencies": {
     "babel-core": "^6.17.0",
     "babel-loader": "^6.2.5",
@@ -17,7 +21,6 @@
     "react": "^15.3.2",
     "react-dom": "^15.3.2",
     "superagent": "^2.3.0",
-    "webpack": "^1.13.2",
-    "webpack-dev-server": "^1.16.2"
+    "webpack": "^1.13.2"
   }
 }

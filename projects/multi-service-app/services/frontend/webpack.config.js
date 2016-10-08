@@ -2,11 +2,10 @@
 var webpack = require('webpack');
 var path = require('path');
 
-var BUILD_DIR = path.resolve(__dirname, 'build');
+var BUILD_DIR = path.resolve(__dirname);
 var APP_DIR = path.resolve(__dirname, 'src');
 
-module.exports = {
-    devtool: 'source-map',
+var config = {
     entry: APP_DIR + '/app.js',
     output: {
         path: BUILD_DIR,
@@ -27,3 +26,17 @@ module.exports = {
         }),
     ],
 };
+
+if ('development' === process.env.NODE_ENV) {
+    config.devtool = 'source-map';
+}
+
+if ('production' === process.env.NODE_ENV) {
+    config.plugins.push(new webpack.optimize.UglifyJsPlugin({
+        compress: {
+            warnings: false,
+        },
+    }));
+}
+
+module.exports = config;
