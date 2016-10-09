@@ -6,6 +6,10 @@ proxy:
 
 apps:
     app2:
+        skip: yes
         env: development
         port: 2080
         host: app2.docker.dev
+    app3:
+        port: 3080
+        host: app3.docker.dev

@@ -139,13 +139,14 @@ if [[ "config" == $PROJECT_CMD ]]; then
             eval APP_ENV=\$"apps__${APP_NAME}__env"
             eval APP_PORT=\$"apps__${APP_NAME}__port"
             eval APP_HOST=\$"apps__${APP_NAME}__host"
+            eval APP_SKIP=\$"apps__${APP_NAME}__skip"
 
             APP_OVERRIDE=""
             [[ $APP_ENV != "" ]] && APP_OVERRIDE="$APP_OVERRIDE""PROJECT_ENV=$APP_ENV "
             [[ $APP_PORT != "" ]] && APP_OVERRIDE="$APP_OVERRIDE""PROJECT_PORT=$APP_PORT "
             [[ $APP_HOST != "" ]] && APP_OVERRIDE="$APP_OVERRIDE""PROJECT_HOST=$APP_HOST "
 
-            [[ $APP_OVERRIDE != "" ]] && echo $APP_OVERRIDE | tr ' ' '\n' > $APP_OVERRIDE_FILE
+            [[ $APP_SKIP != "yes" ]] && [[ $APP_OVERRIDE != "" ]] && echo $APP_OVERRIDE | tr ' ' '\n' > $APP_OVERRIDE_FILE
         done
 
         # Static files
@@ -164,8 +165,11 @@ if [[ "config" == $PROJECT_CMD ]]; then
         for d in apps/*/ ; do
             PROJECT_HOST=""
             PROJECT_PORT=""
+            APP_NAME=$(basename "$d")
+            eval APP_SKIP=\$"apps__${APP_NAME}__skip"
             CONFIG_FILE="$SITES_ENABLED_PATH/$(hash $d).conf"
             CONFIG_FILE_TMP=$(mktemp /tmp/proxy-gen.$CACHE_NAME.$(hash $d).$(date "+%Y%m%d-%H%M%S"))
+
             cp $TEMPLATES_ROOT/virtual-host.conf.tpl $CONFIG_FILE_TMP
             sed -i -e "s/\$SERVER_IP/$proxy__ip/g" $CONFIG_FILE_TMP
             sed -i -e "s/\$SERVER_PORT/$proxy__port/g" $CONFIG_FILE_TMP
@@ -185,7 +189,7 @@ if [[ "config" == $PROJECT_CMD ]]; then
             )
             # override former configuration by removing existing virtual host
             rm -f $CONFIG_FILE
-            [[ $PROJECT_HOST != "" ]] && cat $CONFIG_FILE_TMP > $CONFIG_FILE
+            [[ $APP_SKIP != "yes" ]] && [[ $PROJECT_HOST != "" ]] && cat $CONFIG_FILE_TMP > $CONFIG_FILE
         done
         exit 0
     fi
@@ -301,8 +305,14 @@ fi
 if [[ "compose" == $PROJECT_CMD ]]; then
     COMPOSE_CMD=$2
     for d in apps/*/ ; do
-        echo "$d"
-        ( cd $d && ./compose $COMPOSE_CMD ${@:3} )
+        APP_NAME=$(basename "$d")
+        eval SKIP_APP=\$"apps__${APP_NAME}__skip"
+        if [[ $SKIP_APP == "yes" ]]; then
+            echo "Skip $d"
+        else
+            echo "Boot... $d"
+            ( cd $d && ./compose $COMPOSE_CMD ${@:3} )
+        fi
     done
 fi
 
