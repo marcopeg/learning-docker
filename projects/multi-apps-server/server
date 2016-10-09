@@ -198,56 +198,62 @@ if [[ "config" == $PROJECT_CMD ]]; then
         PORTS=""
         for d in apps/*/ ; do
             APP_NAME=$(basename "$d")
+            eval APP_SKIP=\$"apps__${APP_NAME}__skip"
 
             APP_PORT_DEFAULT=$(cd $d && [ -f .env ] && source .env && echo $PROJECT_PORT)
             eval APP_PORT_OVERRIDE=\$"apps__${APP_NAME}__port"
             APP_PORT=${APP_PORT_OVERRIDE:-$APP_PORT_DEFAULT}
 
-            if [[ $PORTS == *"$APP_PORT;"* ]]; then
-                echo ""
-                echo "====== PORT CONFLICT DETECTED ======"
-                echo ""
-                echo ${PORTS%?} | tr ';' '\n'
-                echo "$APP_NAME -> $APP_PORT << Check this!"
-                echo ""
-                if [[ $APP_PORT == $APP_PORT_OVERRIDE ]]; then
-                    echo "(looks like a \"$CONFIG_FILE\" error)"
-                else
-                    echo "(looks like a \"$d.env\" error)"
+            if [[ $APP_SKIP != "yes" ]]; then
+                if [[ $PORTS == *"$APP_PORT;"* ]]; then
+                    echo ""
+                    echo "====== PORT CONFLICT DETECTED ======"
+                    echo ""
+                    echo ${PORTS%?} | tr ';' '\n'
+                    echo "$APP_NAME -> ${APP_PORT:-missing} << Check this!"
+                    echo ""
+                    if [[ $APP_PORT == $APP_PORT_OVERRIDE ]]; then
+                        echo "(looks like a \"$CONFIG_FILE\" error)"
+                    else
+                        echo "(looks like a \"$d.env\" error)"
+                    fi
+                    echo "===================================="
+                    echo ""
+                    exit 1
                 fi
-                echo "===================================="
-                echo ""
-                exit 1
+                PORTS="$PORTS$APP_NAME -> $APP_PORT;"
             fi
-            PORTS="$PORTS$APP_NAME -> $APP_PORT;"
         done
 
         HOSTS=""
         for d in apps/*/ ; do
             APP_NAME=$(basename "$d")
+            eval APP_SKIP=\$"apps__${APP_NAME}__skip"
 
             APP_HOST_DEFAULT=$(cd $d && [ -f .env ] && source .env && echo $PROJECT_HOST)
             eval APP_HOST_OVERRIDE=\$"apps__${APP_NAME}__host"
             APP_HOST_OVERRIDE=${APP_HOST_OVERRIDE:-$APP_NAME}
             APP_HOST=${APP_HOST_OVERRIDE:-$APP_HOST_DEFAULT}
 
-            if [[ $HOSTS == *"$APP_HOST"* ]]; then
-                echo ""
-                echo "====== HOST CONFLICT DETECTED ======"
-                echo ""
-                echo ${HOSTS%?} | tr ';' '\n'
-                echo "$APP_NAME -> $APP_HOST << Check this!"
-                echo ""
-                if [[ $APP_HOST == $APP_HOST_OVERRIDE ]]; then
-                    echo "(looks like a \"$CONFIG_FILE\" error)"
-                else
-                    echo "(looks like a \"$d.env\" error)"
+            if [[ $APP_SKIP != "yes" ]]; then
+                if [[ $HOSTS == *"$APP_HOST"* ]]; then
+                    echo ""
+                    echo "====== HOST CONFLICT DETECTED ======"
+                    echo ""
+                    echo ${HOSTS%?} | tr ';' '\n'
+                    echo "$APP_NAME -> ${APP_HOST:-missing} << Check this!"
+                    echo ""
+                    if [[ $APP_HOST == $APP_HOST_OVERRIDE ]]; then
+                        echo "(looks like a \"$CONFIG_FILE\" error)"
+                    else
+                        echo "(looks like a \"$d.env\" error)"
+                    fi
+                    echo "===================================="
+                    echo ""
+                    exit 1
                 fi
-                echo "===================================="
-                echo ""
-                exit 1
+                HOSTS="$HOSTS$APP_NAME -> $APP_HOST;"
             fi
-            HOSTS="$HOSTS$APP_NAME -> $APP_HOST;"
         done
         exit 0
     fi
