@@ -84,13 +84,24 @@ WHICH_CMD="$ENV_OVERRIDE_VARS docker-compose $WHICH_COMPOSE $PROJECT_CMD ${@:2} 
 
 # Info
 if [[ "info" == $PROJECT_CMD ]]; then
-    echo "Docker Compose Wrapper"
-    echo "----------------------"
+    echo ""
+    echo ""
+    echo ""
+    echo "================================================="
+    echo "=== COMPOSE PROJECT ============================="
+    echo "================================================="
+    echo ""
     echo "PROJECT_ENV: $PROJECT_ENV"
     echo "PROJECT_PORT: $PROJECT_PORT"
     echo "PROJECT_HOST: $PROJECT_HOST"
     echo ""
-    echo ">> \"$WHICH_CMD\""
+    echo ">> Full docker-compose command:"
+    echo ""
+    echo "    $WHICH_CMD"
+    echo ""
+    echo ""
+    echo ""
+    echo ""
     exit 0
 fi
 
