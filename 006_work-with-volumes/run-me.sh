@@ -7,6 +7,6 @@
 # download an image from Docker Hub and run it with custom options
 docker run \
     --rm \
-    -p 80:80 \
+    -p 8080:80 \
     -v "$PWD"/www:/usr/share/nginx/html \
     nginx:latest

@@ -5,7 +5,7 @@
 # https://github.com/marcopeg/learning-docker
 
 # build a custom image
-docker build --tag my-nginx .
+docker build --tag marcopeg .
 
 # run the new custom image
-docker run -p 80:80 my-nginx
+docker run -p 8080:80 marcopeg

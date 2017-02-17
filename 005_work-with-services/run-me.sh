@@ -5,4 +5,4 @@
 # https://github.com/marcopeg/learning-docker
 
 # download an image from Docker Hub
-docker run --name nodeapp -d -p 1234:8080 marcopeg/nodeapp:latest
+docker run --name nodeapp -d -p 8080:8080 marcopeg/nodeapp:latest

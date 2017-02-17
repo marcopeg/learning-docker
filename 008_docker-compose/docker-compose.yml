@@ -24,7 +24,7 @@ services:
             - 3306:3306
 
     wordpress:
-        image: wordpress
+        image: wordpress:latest
         links:
             - database:mysql
         environment:
@@ -37,7 +37,7 @@ services:
             - database
 
     phpmyadmin:
-        image: phpmyadmin/phpmyadmin
+        image: phpmyadmin/phpmyadmin:latest
         links:
             - database:db
         ports:
@@ -45,6 +45,5 @@ services:
         environment:
             PMA_USER: root
             PMA_PASSWORD: root
-            PHP_UPLOAD_MAX_FILESIZE: 999999999
         depends_on:
             - database

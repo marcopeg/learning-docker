@@ -33,12 +33,17 @@ _NGiNX_ is an extension of [_Alpine_](https://hub.docker.com/_/alpine/) itself!
 In order to build a new image definition you need to write a `Dockerfile` which is a manifest of steps that Docker will perform to take an existing image and extend to suit your needs.
 
 	# Dockerfile
-	FROM nginx
+	FROM nginx:1.11
 	COPY www /usr/share/nginx/html
 	
 This is all the source you need to generate a new custom image which contains both NGiNX and your mighty static HTML website.
 
-**NOTE:** I assume that the folder `www` which contains your website sources is a sibling of your `Dockerfile`.
+**NOTE:** _Docker_ assumes that the folder `www` which contains your website sources is a sibling of your `Dockerfile`.
+
+**NOTE:** I suggest you always use a specific image version `:1.11` in you _Dockerfile_ so the result of the build will be predictable. 
+
+> If you use `:latest` and rebuild your custom image one year from now things may 
+> break due to failed backward compatibility of the base image.
 
 ### What is the best way to learn Dockerfile?
 
@@ -52,7 +57,7 @@ While you can dig into the [ufficial Dockerfile documentation](https://docs.dock
 
 Once your Dockerfile is ready you should open a terminal session, `cd` into its folder and issue:
 
-	docker build -t my-nginx:latest .
+	docker build -t my-nginx:1.11 .
 
 ### Name your image
 
@@ -67,7 +72,7 @@ Actually the tag value is composed by `{IMAGE_NAME}:{IMAGE_VERSION}`. If you omi
 
 Let's test your image! If everything went well you should be able to run your new image, set a port, and get your website out of it:
 
-	docker run -p 80:80 my-nginx
+	docker run -p 8080:80 my-nginx
 	
 > Did it work? Sure it did :-)
 
