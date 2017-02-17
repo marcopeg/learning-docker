@@ -4,7 +4,7 @@
 # https://github.com/marcopeg/learning-docker
 
 # Which NodeJS version do we need for our app?
-FROM node:latest
+FROM node:7.5
 
 # What files do we need to run our app?
 COPY app /usr/src/app/
