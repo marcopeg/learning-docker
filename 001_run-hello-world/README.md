@@ -7,9 +7,9 @@ The first step do move once you have [Docker](https://www.docker.com/) (scroll d
 This is is the simple command you need to **run an existing image**. If you don't have such image available in your local machine Docker will download it for you from [Docker Hub](https://hub.docker.com).
 
 	# run this, if you can!
-	docker run -rm hello-world
+	docker run --rm hello-world
 	
-## `-rm`
+## `--rm`
 
 As many other command line utilities `docker` takes optional arguments (flags) and this is a very useful one as it tells _Docker_ to **clean up the container after the execution**.
 
