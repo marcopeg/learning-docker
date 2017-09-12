@@ -72,7 +72,7 @@ Actually the tag value is composed by `{IMAGE_NAME}:{IMAGE_VERSION}`. If you omi
 
 Let's test your image! If everything went well you should be able to run your new image, set a port, and get your website out of it:
 
-	docker run -p 8080:80 my-nginx
+	docker run -p 8080:80 my-nginx:1.11
 	
 > Did it work? Sure it did :-)
 
